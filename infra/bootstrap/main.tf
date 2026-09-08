@@ -60,7 +60,7 @@ resource "azuread_application_federated_identity_credential" "github" {
   display_name   = "github-federated-cred"
   audiences      = ["api://AzureADTokenExchange"]
   issuer         = "https://token.actions.githubusercontent.com"
-  subject        = "repo:yasin-96/three-tier-app-azure:ref:refs/heads/main"
+  subject        = "repo:yasin-96@62212311/three-tier-app-azure@1354662097:ref:refs/heads/main"
 }
 
 resource "azurerm_role_assignment" "github_contributor" {
