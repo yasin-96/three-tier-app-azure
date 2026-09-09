@@ -17,6 +17,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Build JAR
+        run: mvn -f backend/pom.xml clean package -DskipTests
+
       - name: Azure Login via OIDC
         uses: azure/login@v2
         with:
