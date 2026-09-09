@@ -60,3 +60,10 @@ resource "azurerm_cdn_frontdoor_route" "frontend" {
   https_redirect_enabled = true
   link_to_default_domain = true
 }
+
+resource "azurerm_role_assignment" "github_frontend_blob" {
+  scope                = azurerm_storage_account.frontend.id
+  role_definition_name = "Storage Blob Data Contributor"
+  principal_id         = "7f9ef423-6a43-4a57-a7e1-3dbbc600eedd"   # objectId des SP
+  # oder als Referenz, wenn der SP im selben State ist
+}
