@@ -1,7 +1,11 @@
 name: Infra Deployment
 
 on:
-  workflow_dispatch: 
+  push:
+    branches:
+      - main
+    paths:
+      - 'infra/app/**'    
 
 permissions:
   id-token: write
@@ -34,7 +38,7 @@ jobs:
         run: terraform init
 
       - name: Terraform Plan
-        run: terraform plan -input=false
+        run: terraform plan -out=tfplan -input=false
 
       - name: Terraform Apply
         run: terraform apply -auto-approve -input=false tfplan

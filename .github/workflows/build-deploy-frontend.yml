@@ -1,0 +1,53 @@
+name: Frontend Deployment
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure Login via OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build React app
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Upload to Blob $web
+        run: |
+          az storage blob upload-batch \
+            --account-name stfrontendthreetier \
+            --destination '$web' \
+            --source frontend/dist \
+            --auth-mode login \
+            --overwrite
+
+      - name: Purge Front Door cache
+        run: |
+          az afd endpoint purge \
+            --resource-group three-tier-rg \
+            --profile-name frontend-fd \
+            --endpoint-name frontend-endpoint \
+            --content-paths '/*'
