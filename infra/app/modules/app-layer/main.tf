@@ -187,3 +187,17 @@ resource "azurerm_private_dns_a_record" "hello_app" {
   ttl                 = 30
   records             = [azurerm_container_app_environment.main.static_ip_address]
 }
+
+resource "azurerm_container_registry" "main" {
+  name                = "acrthreetier"
+  resource_group_name = var.resource_group_name
+  location            = var.location
+  sku                 = "Basic"              
+  admin_enabled       = false      
+}
+
+resource "azurerm_user_assigned_identity" "containerapp" {
+  name                = "containerapp-identity"
+  resource_group_name = var.resource_group_name
+  location            = var.location
+}
