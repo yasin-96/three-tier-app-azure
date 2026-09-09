@@ -158,7 +158,7 @@ resource "azurerm_container_app" "main" {
 
     container {
       name   = "backend"
-      image  = "${azurerm_container_registry.main.login_server}/backend:latest"
+      image  = "nginx:latest"   # Bootstrap-Platzhalter — Pipeline übernimmt danach
       cpu    = 0.25
       memory = "0.5Gi"
     }
