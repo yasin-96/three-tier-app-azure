@@ -137,26 +137,36 @@ resource "azurerm_application_gateway" "main" {
 }
 
 resource "azurerm_container_app" "main" {
-  name                         = "hello-app"
+  name                         = "backend-app"
   container_app_environment_id = azurerm_container_app_environment.main.id
   resource_group_name          = var.resource_group_name
   revision_mode                = "Single"
+
+   identity {
+    type         = "UserAssigned"
+    identity_ids = [azurerm_user_assigned_identity.containerapp.id]
+  }
+
+  registry {
+    server   = azurerm_container_registry.main.login_server
+    identity = azurerm_user_assigned_identity.containerapp.id
+  }
 
   template {
     min_replicas = 2
     max_replicas = 3
 
     container {
-      name   = "hello"
-      image  = "nginx:latest"
+      name   = "backend"
+      image  = "${azurerm_container_registry.main.login_server}/backend:latest"
       cpu    = 0.25
       memory = "0.5Gi"
     }
   }
 
   ingress {
-    external_enabled = true # internal — nur vom Gateway erreichbar
-    target_port      = 80
+    external_enabled = true
+    target_port      = 8080
     transport        = "auto"
     
 
