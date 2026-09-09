@@ -13,6 +13,7 @@ resource "azurerm_public_ip" "appgw" {
   location            = var.location
   allocation_method   = "Static"
   sku                 = "Standard"
+  domain_name_label   = "three-tier-api" 
 }
 
 resource "azurerm_network_security_group" "appgw" {
