@@ -9,3 +9,8 @@ variable "location" {
   type        = string
   default     = "germanywestcentral"
 }
+
+variable "cert_password" {
+  type      = string
+  sensitive = true
+}

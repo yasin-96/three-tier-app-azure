@@ -19,3 +19,8 @@ variable "public_subnet_id" {
 variable "vnet_id" {
   type = string
 }
+
+variable "cert_password" {
+  type      = string
+  sensitive = true
+}

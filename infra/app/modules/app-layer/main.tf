@@ -21,7 +21,6 @@ resource "azurerm_network_security_group" "appgw" {
   resource_group_name = var.resource_group_name
   location            = var.location
 
-  # 1. Eingehender Web-Traffic vom Internet (dein myapi.com)
   security_rule {
     name                       = "allow-http-inbound"
     priority                   = 100
@@ -29,12 +28,23 @@ resource "azurerm_network_security_group" "appgw" {
     access                     = "Allow"
     protocol                   = "Tcp"
     source_port_range          = "*"
-    destination_port_range     = "80" # bzw. 443 bei HTTPS
+    destination_port_range     = "80"
     source_address_prefix      = "Internet"
     destination_address_prefix = "*"
   }
 
-  # 2. PFLICHT: Gateway-Manager-Ports für Application Gateway v2
+  security_rule {
+    name                       = "allow-https-inbound"
+    priority                   = 105
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "443"
+    source_address_prefix      = "Internet"
+    destination_address_prefix = "*"
+  }
+
   security_rule {
     name                       = "allow-gwmanager"
     priority                   = 110
@@ -76,12 +86,26 @@ resource "azurerm_application_gateway" "main" {
     public_ip_address_id = azurerm_public_ip.appgw.id
   }
 
+  ssl_certificate {
+    name                = "api-cert"
+    key_vault_secret_id = azurerm_key_vault_certificate.api.secret_id
+  }
+
+  identity {
+    type         = "UserAssigned"
+    identity_ids = [azurerm_user_assigned_identity.appgw.id]
+  } 
+
   frontend_port {
     name = "http-port"
     port = 80
   }
 
-  # WOHIN (Backend Pool = dein "Target Group"-Äquivalent)
+  frontend_port {
+    name = "https-port"
+    port = 443
+  }
+
   backend_address_pool {
     name = "container-apps-pool"
 
@@ -90,7 +114,6 @@ resource "azurerm_application_gateway" "main" {
     ]
   }
 
-  # WIE zum Backend verbunden wird
   backend_http_settings {
     name                                = "http-settings"
     cookie_based_affinity               = "Disabled"
@@ -102,7 +125,6 @@ resource "azurerm_application_gateway" "main" {
     host_name = "backend-app.${azurerm_container_app_environment.main.default_domain}"
   }
 
-  # WORAUF das Gateway lauscht
   http_listener {
     name                           = "http-listener"
     frontend_ip_configuration_name = "frontend-ip"
@@ -110,7 +132,14 @@ resource "azurerm_application_gateway" "main" {
     protocol                       = "Http"
   }
 
-  # Verbindet alles: Listener → Settings → Pool
+  http_listener {
+    name                           = "https-listener"
+    frontend_ip_configuration_name = "frontend-ip"
+    frontend_port_name             = "https-port"
+    protocol                       = "Https"
+    ssl_certificate_name           = "api-cert"
+  }
+
   request_routing_rule {
     name                       = "routing-rule"
     priority                   = 100
@@ -119,6 +148,15 @@ resource "azurerm_application_gateway" "main" {
     backend_address_pool_name  = "container-apps-pool"
     backend_http_settings_name = "http-settings"
   }
+
+  request_routing_rule {
+    name                       = "https-routing-rule"
+    priority                   = 110
+    rule_type                  = "Basic"
+    http_listener_name         = "https-listener"
+    backend_address_pool_name  = "container-apps-pool"
+    backend_http_settings_name = "http-settings"
+}
 
   probe {
     name                                      = "container-app-probe"
@@ -146,6 +184,7 @@ resource "azurerm_container_app" "main" {
     type         = "UserAssigned"
     identity_ids = [azurerm_user_assigned_identity.containerapp.id]
   }
+  
 
   registry {
     server   = azurerm_container_registry.main.login_server
@@ -214,4 +253,52 @@ resource "azurerm_user_assigned_identity" "containerapp" {
   name                = "containerapp-identity"
   resource_group_name = var.resource_group_name
   location            = var.location
+}
+
+data "azurerm_client_config" "current" {}
+
+resource "azurerm_key_vault" "main" {
+  name                       = "kv-threetier-yasin"
+  resource_group_name        = var.resource_group_name
+  location                   = var.location
+  tenant_id                  = data.azurerm_client_config.current.tenant_id
+  sku_name                   = "standard"
+  soft_delete_retention_days = 7
+  purge_protection_enabled   = false
+}
+
+resource "azurerm_key_vault_access_policy" "admin" {
+  key_vault_id = azurerm_key_vault.main.id
+  tenant_id    = data.azurerm_client_config.current.tenant_id
+  object_id    = data.azurerm_client_config.current.object_id
+
+  certificate_permissions = ["Get", "Import", "List", "Delete"]
+  secret_permissions       = ["Get", "List"]
+}
+
+resource "azurerm_key_vault_certificate" "api" {
+  name         = "api-cert"
+  key_vault_id = azurerm_key_vault.main.id
+
+  certificate {
+    contents = filebase64("${path.module}/cert.pfx")
+    password = var.cert_password
+  }
+
+  depends_on = [azurerm_key_vault_access_policy.admin]
+}
+
+resource "azurerm_user_assigned_identity" "appgw" {
+  name                = "appgw-identity"
+  resource_group_name = var.resource_group_name
+  location             = var.location
+}
+
+resource "azurerm_key_vault_access_policy" "appgw" {
+  key_vault_id = azurerm_key_vault.main.id
+  tenant_id    = data.azurerm_client_config.current.tenant_id
+  object_id    = azurerm_user_assigned_identity.appgw.principal_id
+
+  certificate_permissions = ["Get"]
+  secret_permissions       = ["Get"]
 }

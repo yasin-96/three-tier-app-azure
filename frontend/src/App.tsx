@@ -7,7 +7,7 @@ function App() {
   const sendRequest = async () => {
     setLoading(true)
     try {
-      await fetch('http://three-tier-api.germanywestcentral.cloudapp.azure.com/api/hello', {
+      await fetch('https://three-tier-api.germanywestcentral.cloudapp.azure.com/api/hello', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -43,3 +43,7 @@ terraform.rc
 # Uncomment the line below if you want to ignore planout files.
 # planout
 .DS_Store
+
+*.pem
+*.pfx
+*.key

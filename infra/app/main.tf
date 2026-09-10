@@ -35,6 +35,7 @@ module "app-layer" {
   app_subnet_id       = module.networking.app_subnet_id
   public_subnet_id    = module.networking.public_subnet_id
   vnet_id = module.networking.vnet_id
+  cert_password = var.cert_password
 }
 
 module "frontend" {
