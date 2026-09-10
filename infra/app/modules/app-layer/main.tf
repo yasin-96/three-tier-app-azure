@@ -158,10 +158,14 @@ resource "azurerm_container_app" "main" {
 
     container {
       name   = "backend"
-      
+      image = "nginx_latest"
       cpu    = 0.25
       memory = "0.5Gi"
     }
+  }
+
+  lifecycle {
+    ignore_changes = [template[0].container[0].image]
   }
 
   ingress {
