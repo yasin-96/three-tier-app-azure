@@ -86,7 +86,7 @@ resource "azurerm_application_gateway" "main" {
     name = "container-apps-pool"
 
     fqdns = [
-      "hello-app.${azurerm_container_app_environment.main.default_domain}"
+      "backend-app.${azurerm_container_app_environment.main.default_domain}"
     ]
   }
 
@@ -128,7 +128,7 @@ resource "azurerm_application_gateway" "main" {
     timeout                                   = 30
     unhealthy_threshold                       = 3
 
-    host = "hello-app.${azurerm_container_app_environment.main.default_domain}"
+    host = "backend-app.${azurerm_container_app_environment.main.default_domain}"
 
     match {
       status_code = ["200"]
