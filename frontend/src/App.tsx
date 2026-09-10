@@ -7,7 +7,7 @@ function App() {
   const sendRequest = async () => {
     setLoading(true)
     try {
-      await fetch('https://backend-lb-310342544.eu-west-1.elb.amazonaws.com/api/hello', {
+      await fetch('http://three-tier-api.germanywestcentral.cloudapp.azure.com/api/hello', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
