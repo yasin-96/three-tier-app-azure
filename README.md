@@ -7,6 +7,8 @@ Flexible Server**-ready data tier and a **Front Door + Blob Storage** frontend â
 infrastructure, image builds, and deployment fully automated via OIDC, with no static
 cloud credentials anywhere in the pipeline.
 
+![Architecture](azure_three_tier_app.jpg)
+
 This is the Azure counterpart to
 [`terraform-three-tier-app`](https://github.com/yasin-96/terraform-three-tier-app),
 the same architecture built on AWS. The two repos deliberately implement identical
