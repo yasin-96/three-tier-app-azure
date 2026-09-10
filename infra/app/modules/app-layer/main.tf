@@ -158,7 +158,7 @@ resource "azurerm_container_app" "main" {
 
     container {
       name   = "backend"
-      image = "nginx_latest"
+      image = "nginx_latest" #placeholder image
       cpu    = 0.25
       memory = "0.5Gi"
     }
@@ -182,7 +182,7 @@ resource "azurerm_container_app" "main" {
 }
 
 resource "azurerm_private_dns_zone" "containerapps" {
-  name                = "jollyisland-1dde15d7.germanywestcentral.azurecontainerapps.io"
+  name                = azurerm_container_app_environment.main.default_domain
   resource_group_name = var.resource_group_name
 }
 
@@ -190,12 +190,12 @@ resource "azurerm_private_dns_zone_virtual_network_link" "containerapps" {
   name                  = "link-appgw-vnet"
   resource_group_name   = var.resource_group_name
   private_dns_zone_name = azurerm_private_dns_zone.containerapps.name
-  virtual_network_id    = var.vnet_id   # dein VNet
+  virtual_network_id    = var.vnet_id
   registration_enabled  = false
 }
 
-resource "azurerm_private_dns_a_record" "hello_app" {
-  name                = "hello-app"
+resource "azurerm_private_dns_a_record" "backend" {
+  name                = "backend-app"
   zone_name           = azurerm_private_dns_zone.containerapps.name
   resource_group_name = var.resource_group_name
   ttl                 = 30
