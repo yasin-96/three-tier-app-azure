@@ -99,7 +99,7 @@ resource "azurerm_application_gateway" "main" {
     request_timeout                     = 30
     probe_name                          = "container-app-probe" # ← verweist auf die Probe
 
-    host_name = "hello-app.${azurerm_container_app_environment.main.default_domain}"
+    host_name = "backend-app.${azurerm_container_app_environment.main.default_domain}"
   }
 
   # WORAUF das Gateway lauscht
@@ -158,7 +158,7 @@ resource "azurerm_container_app" "main" {
 
     container {
       name   = "backend"
-      image  = "nginx:latest"   # Bootstrap-Platzhalter — Pipeline übernimmt danach
+      
       cpu    = 0.25
       memory = "0.5Gi"
     }
