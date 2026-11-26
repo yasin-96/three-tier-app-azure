@@ -1,0 +1,68 @@
+name: Publish backend image (GHCR)
+
+# Builds the backend and publishes it to GitHub Container Registry for the
+# clusteryard AKS platform (github.com/yasin-96/clusteryard), which deploys it
+# with ArgoCD. Runs next to build-deploy-backend.yml (ACR / Container Apps).
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/publish-backend-ghcr.yml"
+  pull_request:
+    paths:
+      - "backend/**"
+      - ".github/workflows/publish-backend-ghcr.yml"
+
+permissions:
+  contents: read
+
+env:
+  IMAGE: ghcr.io/${{ github.repository_owner }}/three-tier-backend
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write # push to GHCR with GITHUB_TOKEN, no stored secret
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Test and build JAR
+        run: mvn -B -f backend/pom.xml clean package
+
+      - name: Build image
+        working-directory: backend
+        run: |
+          docker build \
+            --label org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }} \
+            --label org.opencontainers.image.revision=${{ github.sha }} \
+            -t "$IMAGE:${{ github.sha }}" .
+
+      # Pull requests only build and test; publishing happens on main.
+      - name: Push image
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "$GH_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker push "$IMAGE:${{ github.sha }}"
+          docker tag "$IMAGE:${{ github.sha }}" "$IMAGE:main"
+          docker push "$IMAGE:main"
+          {
+            echo "### Published"
+            echo "\`$IMAGE:${{ github.sha }}\`"
+            echo
+            echo "Digest: \`$(docker inspect --format '{{index .RepoDigests 0}}' "$IMAGE:${{ github.sha }}")\`"
+          } >> "$GITHUB_STEP_SUMMARY"
